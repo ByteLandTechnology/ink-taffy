@@ -1,9 +1,12 @@
 {
 	"name": "ink-taffy",
-	"version": "6.6.0",
+	"version": "6.6.0-1",
 	"description": "React for CLI",
 	"license": "MIT",
-	"repository": "ByteLandTechnology/ink-taffy",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ByteLandTechnology/ink-taffy.git"
+	},
 	"author": {
 		"name": "ByteLandTechnology",
 		"email": "github@byteland.app",
