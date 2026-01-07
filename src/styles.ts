@@ -14,6 +14,7 @@ import {
 	type Style as TaffyStyle,
 	type Dimension,
 	AlignContent,
+	Overflow,
 } from 'taffy-js';
 import {type TaffyNode} from './taffy-node.js';
 
@@ -361,7 +362,12 @@ const applyMarginStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 		marginBottom = style.marginBottom || 0;
 	}
 
-	if (marginLeft || marginRight || marginTop || marginBottom) {
+	if (
+		marginLeft !== undefined ||
+		marginRight !== undefined ||
+		marginTop !== undefined ||
+		marginBottom !== undefined
+	) {
 		taffyStyle.margin = {
 			left: marginLeft ?? taffyStyle.margin.left,
 			right: marginRight ?? taffyStyle.margin.right,
@@ -410,7 +416,12 @@ const applyPaddingStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 		paddingBottom = style.paddingBottom || 0;
 	}
 
-	if (paddingLeft || paddingRight || paddingTop || paddingBottom) {
+	if (
+		paddingLeft !== undefined ||
+		paddingRight !== undefined ||
+		paddingTop !== undefined ||
+		paddingBottom !== undefined
+	) {
 		taffyStyle.padding = {
 			left: paddingLeft ?? taffyStyle.padding.left,
 			right: paddingRight ?? taffyStyle.padding.right,
@@ -622,7 +633,7 @@ const applyDimensionStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 		}
 	}
 
-	if (newWidth || newHeight) {
+	if (newWidth !== undefined || newHeight !== undefined) {
 		taffyStyle.size = {
 			width: newWidth ?? taffyStyle.size.width,
 			height: newHeight ?? taffyStyle.size.height,
@@ -657,7 +668,7 @@ const applyDimensionStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 		}
 	}
 
-	if (newMinWidth || newMinHeight) {
+	if (newMinWidth !== undefined || newMinHeight !== undefined) {
 		taffyStyle.minSize = {
 			width: newMinWidth ?? taffyStyle.minSize.width,
 			height: newMinHeight ?? taffyStyle.minSize.height,
@@ -726,6 +737,78 @@ const applyGapStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 	}
 };
 
+const applyOverflowStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
+	let overflowX: Overflow | undefined;
+	let overflowY: Overflow | undefined;
+
+	if ('overflow' in style) {
+		switch (style.overflow) {
+			case 'hidden': {
+				overflowX = Overflow.Hidden;
+				overflowY = Overflow.Hidden;
+				break;
+			}
+
+			case 'visible': {
+				overflowX = Overflow.Visible;
+				overflowY = Overflow.Visible;
+				break;
+			}
+
+			default: {
+				overflowX = Overflow.Visible;
+				overflowY = Overflow.Visible;
+				break;
+			}
+		}
+	}
+
+	if ('overflowX' in style) {
+		switch (style.overflowX) {
+			case 'hidden': {
+				overflowX = Overflow.Hidden;
+				break;
+			}
+
+			case 'visible': {
+				overflowX = Overflow.Visible;
+				break;
+			}
+
+			default: {
+				overflowX = Overflow.Visible;
+				break;
+			}
+		}
+	}
+
+	if ('overflowY' in style) {
+		switch (style.overflowY) {
+			case 'hidden': {
+				overflowY = Overflow.Hidden;
+				break;
+			}
+
+			case 'visible': {
+				overflowY = Overflow.Visible;
+				break;
+			}
+
+			default: {
+				overflowY = Overflow.Visible;
+				break;
+			}
+		}
+	}
+
+	if (overflowX !== undefined || overflowY !== undefined) {
+		taffyStyle.overflow = {
+			x: overflowX ?? taffyStyle.overflow.x,
+			y: overflowY ?? taffyStyle.overflow.y,
+		};
+	}
+};
+
 const styles = (node: TaffyNode, style: Styles = {}): void => {
 	const taffyStyle = node.tree.getStyle(node.id);
 	applyPositionStyles(taffyStyle, style);
@@ -736,6 +819,7 @@ const styles = (node: TaffyNode, style: Styles = {}): void => {
 	applyDisplayStyles(taffyStyle, style);
 	applyBorderStyles(taffyStyle, style);
 	applyGapStyles(taffyStyle, style);
+	applyOverflowStyles(taffyStyle, style);
 	node.tree.setStyle(node.id, taffyStyle);
 };
 
