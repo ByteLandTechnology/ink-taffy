@@ -12,8 +12,9 @@ const renderBackground = (
 		return;
 	}
 
-	const width = node.yogaNode!.getComputedWidth();
-	const height = node.yogaNode!.getComputedHeight();
+	const layout = node.taffyNode!.tree.getLayout(node.taffyNode!.id);
+	const width = layout?.width ?? 0;
+	const height = layout?.height ?? 0;
 
 	// Calculate the actual content area considering borders
 	const leftBorderWidth =

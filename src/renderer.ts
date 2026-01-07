@@ -11,7 +11,7 @@ type Result = {
 };
 
 const renderer = (node: DOMElement, isScreenReaderEnabled: boolean): Result => {
-	if (node.yogaNode) {
+	if (node.taffyNode) {
 		if (isScreenReaderEnabled) {
 			const output = renderNodeToScreenReaderOutput(node, {
 				skipStaticElements: true,
@@ -34,9 +34,11 @@ const renderer = (node: DOMElement, isScreenReaderEnabled: boolean): Result => {
 			};
 		}
 
+		const layout = node.taffyNode.tree.getLayout(node.taffyNode.id);
+
 		const output = new Output({
-			width: node.yogaNode.getComputedWidth(),
-			height: node.yogaNode.getComputedHeight(),
+			width: layout.width,
+			height: layout.height,
 		});
 
 		renderNodeToOutput(node, output, {
@@ -45,10 +47,14 @@ const renderer = (node: DOMElement, isScreenReaderEnabled: boolean): Result => {
 
 		let staticOutput;
 
-		if (node.staticNode?.yogaNode) {
+		if (node.staticNode?.taffyNode) {
+			const staticLayout = node.staticNode.taffyNode.tree.getLayout(
+				node.staticNode.taffyNode.id,
+			);
+
 			staticOutput = new Output({
-				width: node.staticNode.yogaNode.getComputedWidth(),
-				height: node.staticNode.yogaNode.getComputedHeight(),
+				width: staticLayout.width,
+				height: staticLayout.height,
 			});
 
 			renderNodeToOutput(node.staticNode, staticOutput, {

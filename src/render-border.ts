@@ -11,8 +11,10 @@ const renderBorder = (
 	output: Output,
 ): void => {
 	if (node.style.borderStyle) {
-		const width = node.yogaNode!.getComputedWidth();
-		const height = node.yogaNode!.getComputedHeight();
+		const layout = node.taffyNode?.tree.getLayout(node.taffyNode.id);
+		const width = layout?.width ?? 0;
+		const height = layout?.height ?? 0;
+
 		const box =
 			typeof node.style.borderStyle === 'string'
 				? cliBoxes[node.style.borderStyle]

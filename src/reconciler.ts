@@ -4,7 +4,7 @@ import {
 	DefaultEventPriority,
 	NoEventPriority,
 } from 'react-reconciler/constants.js';
-import Yoga, {type Node as YogaNode} from 'yoga-layout';
+import {Display} from 'taffy-js';
 import {createContext} from 'react';
 import {
 	createTextNode,
@@ -22,6 +22,7 @@ import {
 } from './dom.js';
 import applyStyles, {type Styles} from './styles.js';
 import {type OutputTransformer} from './render-node-to-output.js';
+import type {TaffyNode} from './taffy-node.js';
 
 // We need to conditionally perform devtools connection to avoid
 // accidentally breaking other third-party code.
@@ -83,9 +84,8 @@ const diff = (before: AnyObject, after: AnyObject): AnyObject | undefined => {
 	return isChanged ? changed : undefined;
 };
 
-const cleanupYogaNode = (node?: YogaNode): void => {
-	node?.unsetMeasureFunc();
-	node?.freeRecursive();
+const cleanupTaffyNode = (node?: TaffyNode): void => {
+	node?.free();
 };
 
 type Props = Record<string, unknown>;
@@ -172,8 +172,8 @@ export default createReconciler<
 			if (key === 'style') {
 				setStyle(node, value as Styles);
 
-				if (node.yogaNode) {
-					applyStyles(node.yogaNode, value as Styles);
+				if (node.taffyNode) {
+					applyStyles(node.taffyNode, value as Styles);
 				}
 
 				continue;
@@ -218,10 +218,18 @@ export default createReconciler<
 	},
 	getPublicInstance: instance => instance,
 	hideInstance(node) {
-		node.yogaNode?.setDisplay(Yoga.DISPLAY_NONE);
+		const style = node.taffyNode?.tree.getStyle(node.taffyNode.id);
+		if (style) {
+			style.display = Display.None;
+			node.taffyNode?.tree.setStyle(node.taffyNode.id, style);
+		}
 	},
 	unhideInstance(node) {
-		node.yogaNode?.setDisplay(Yoga.DISPLAY_FLEX);
+		const style = node.taffyNode?.tree.getStyle(node.taffyNode.id);
+		if (style) {
+			style.display = Display.Flex;
+			node.taffyNode?.tree.setStyle(node.taffyNode.id, style);
+		}
 	},
 	appendInitialChild: appendChildNode,
 	appendChild: appendChildNode,
@@ -246,7 +254,7 @@ export default createReconciler<
 	insertInContainerBefore: insertBeforeNode,
 	removeChildFromContainer(node, removeNode) {
 		removeChildNode(node, removeNode);
-		cleanupYogaNode(removeNode.yogaNode);
+		cleanupTaffyNode(removeNode.taffyNode);
 	},
 	commitUpdate(node, _type, oldProps, newProps) {
 		if (currentRootNode && node.internal_static) {
@@ -285,8 +293,8 @@ export default createReconciler<
 			}
 		}
 
-		if (style && node.yogaNode) {
-			applyStyles(node.yogaNode, style);
+		if (style && node.taffyNode) {
+			applyStyles(node.taffyNode, style);
 		}
 	},
 	commitTextUpdate(node, _oldText, newText) {
@@ -294,7 +302,7 @@ export default createReconciler<
 	},
 	removeChild(node, removeNode) {
 		removeChildNode(node, removeNode);
-		cleanupYogaNode(removeNode.yogaNode);
+		cleanupTaffyNode(removeNode.taffyNode);
 	},
 	setCurrentUpdatePriority(newPriority: number) {
 		currentUpdatePriority = newPriority;

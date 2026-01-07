@@ -17,7 +17,7 @@
 [![npm](https://img.shields.io/npm/dm/ink?logo=npm)](https://npmjs.com/package/ink)
 
 Ink provides the same component-based UI building experience that React offers in the browser, but for command-line apps.
-It uses [Yoga](https://github.com/facebook/yoga) to build Flexbox layouts in the terminal, so most CSS-like properties are available in Ink as well.
+It uses [Taffy](https://github.com/DioxusLabs/taffy) to build Flexbox layouts in the terminal, so most CSS-like properties are available in Ink as well.
 If you are already familiar with React, you already know Ink.
 
 Since Ink is a React renderer, all features of React are supported.
@@ -127,7 +127,7 @@ Feel free to play around with the code and fork this Repl at [https://repl.it/@v
 - [instagram-cli](https://github.com/supreme-gg-gg/instagram-cli) - Instagram client.
 - [ElevenLabs CLI](https://github.com/elevenlabs/cli) - ElevenLabs agents client.
 
-*(PRs welcome. Append new entries at the end. Repos must have 100+ stars and showcase Ink beyond a basic list picker.)*
+_(PRs welcome. Append new entries at the end. Repos must have 100+ stars and showcase Ink beyond a basic list picker.)_
 
 ## Contents
 
@@ -214,7 +214,7 @@ If you don't like transpiling files during development, you can use [import-jsx]
 </p>
 </details>
 
-Ink uses [Yoga](https://github.com/facebook/yoga), a Flexbox layout engine, to build great user interfaces for your CLIs using familiar CSS-like properties you've used when building apps for the browser.
+Ink uses [Taffy](https://github.com/DioxusLabs/taffy), a Flexbox layout engine, to build great user interfaces for your CLIs using familiar CSS-like properties you've used when building apps for the browser.
 It's important to remember that each element is a Flexbox container.
 Think of it as if every `<div>` in the browser had `display: flex`.
 See [`<Box>`](#box) built-in component below for documentation on how to use Flexbox layouts in Ink.
@@ -441,14 +441,12 @@ You can also set it as a percentage, which will calculate the height based on th
 Type: `number`
 
 Sets a minimum width of the element.
-Percentages aren't supported yet; see https://github.com/facebook/yoga/issues/872.
 
 ##### minHeight
 
 Type: `number`
 
 Sets a minimum height of the element.
-Percentages aren't supported yet; see https://github.com/facebook/yoga/issues/872.
 
 #### Padding
 
@@ -982,7 +980,7 @@ Alternatively, pass a custom border style like so:
 		bottomLeft: '↗',
 		bottom: '↑',
 		bottomRight: '↖',
-		right: '←'
+		right: '←',
 	}}
 >
 	<Text>Custom</Text>
@@ -1168,11 +1166,23 @@ Accepts the same values as [`color`](#color) in the `<Text>` component.
 		<Text>Red background</Text>
 	</Box>
 
-	<Box backgroundColor="#FF8800" width={20} height={3} marginTop={1} alignSelf="flex-start">
+	<Box
+		backgroundColor="#FF8800"
+		width={20}
+		height={3}
+		marginTop={1}
+		alignSelf="flex-start"
+	>
 		<Text>Orange background</Text>
 	</Box>
 
-	<Box backgroundColor="rgb(0, 255, 0)" width={20} height={3} marginTop={1} alignSelf="flex-start">
+	<Box
+		backgroundColor="rgb(0, 255, 0)"
+		width={20}
+		height={3}
+		marginTop={1}
+		alignSelf="flex-start"
+	>
 		<Text>Green background</Text>
 	</Box>
 </Box>
@@ -1191,7 +1201,12 @@ The background color fills the entire `<Box>` area and is inherited by child `<T
 Background colors work with borders and padding:
 
 ```jsx
-<Box backgroundColor="cyan" borderStyle="round" padding={1} alignSelf="flex-start">
+<Box
+	backgroundColor="cyan"
+	borderStyle="round"
+	padding={1}
+	alignSelf="flex-start"
+>
 	<Text>Background with border and padding</Text>
 </Box>
 ```
@@ -1300,8 +1315,8 @@ const Example = () => {
 					...previousTests,
 					{
 						id: previousTests.length,
-						title: `Test #${previousTests.length + 1}`
-					}
+						title: `Test #${previousTests.length + 1}`,
+					},
 				]);
 
 				timer = setTimeout(run, 100);
@@ -1440,7 +1455,7 @@ const text =
 render(
 	<HangingIndent bold dimColor indent={4}>
 		{text}
-	</HangingIndent>
+	</HangingIndent>,
 );
 ```
 
@@ -2260,6 +2275,7 @@ Type: `string`
 The role of the element.
 
 Supported values:
+
 - `button`
 - `checkbox`
 - `radio`
@@ -2282,6 +2298,7 @@ Type: `object`
 The state of the element.
 
 Supported values:
+
 - `checked` (boolean)
 - `disabled` (boolean)
 - `expanded` (boolean)

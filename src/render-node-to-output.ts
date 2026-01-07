@@ -1,6 +1,6 @@
 import widestLine from 'widest-line';
 import indentString from 'indent-string';
-import Yoga from 'yoga-layout';
+import {Display} from 'taffy-js';
 import wrapText from './wrap-text.js';
 import getMaxWidth from './get-max-width.js';
 import squashTextNodes from './squash-text-nodes.js';
@@ -16,11 +16,12 @@ import type Output from './output.js';
 // Only first node is taken into account, because other text nodes can't have margin or padding,
 // so their coordinates will be relative to the first node anyway
 const applyPaddingToText = (node: DOMElement, text: string): string => {
-	const yogaNode = node.childNodes[0]?.yogaNode;
+	const taffyNode = node.childNodes[0]?.taffyNode;
 
-	if (yogaNode) {
-		const offsetX = yogaNode.getComputedLeft();
-		const offsetY = yogaNode.getComputedTop();
+	if (taffyNode) {
+		const layout = taffyNode.tree.getLayout(taffyNode.id);
+		const offsetX = layout.x;
+		const offsetY = layout.y;
 		text = '\n'.repeat(offsetY) + indentString(text, offsetX);
 	}
 
@@ -40,8 +41,12 @@ export const renderNodeToScreenReaderOutput = (
 		return '';
 	}
 
-	if (node.yogaNode?.getDisplay() === Yoga.DISPLAY_NONE) {
-		return '';
+	const {taffyNode} = node;
+	if (taffyNode) {
+		const display = taffyNode.tree.getStyle(taffyNode.id)?.display;
+		if (display === Display.None) {
+			return '';
+		}
 	}
 
 	let output = '';
@@ -118,16 +123,18 @@ const renderNodeToOutput = (
 		return;
 	}
 
-	const {yogaNode} = node;
+	const {taffyNode} = node;
 
-	if (yogaNode) {
-		if (yogaNode.getDisplay() === Yoga.DISPLAY_NONE) {
+	if (taffyNode) {
+		if (taffyNode.tree.getStyle(taffyNode.id).display === Display.None) {
 			return;
 		}
 
-		// Left and top positions in Yoga are relative to their parent node
-		const x = offsetX + yogaNode.getComputedLeft();
-		const y = offsetY + yogaNode.getComputedTop();
+		const layout = taffyNode.tree.getLayout(taffyNode.id);
+
+		// Left and top positions in Taffy are relative to their parent node
+		const x = offsetX + layout.x;
+		const y = offsetY + layout.y;
 
 		// Transformers are functions that transform final text output of each component
 		// See Output class for logic that applies transformers
@@ -142,7 +149,7 @@ const renderNodeToOutput = (
 
 			if (text.length > 0) {
 				const currentWidth = widestLine(text);
-				const maxWidth = getMaxWidth(yogaNode);
+				const maxWidth = getMaxWidth(layout);
 
 				if (currentWidth > maxWidth) {
 					const textWrap = node.style.textWrap ?? 'wrap';
@@ -169,24 +176,16 @@ const renderNodeToOutput = (
 				node.style.overflowY === 'hidden' || node.style.overflow === 'hidden';
 
 			if (clipHorizontally || clipVertically) {
-				const x1 = clipHorizontally
-					? x + yogaNode.getComputedBorder(Yoga.EDGE_LEFT)
-					: undefined;
+				const x1 = clipHorizontally ? x + layout.borderLeft : undefined;
 
 				const x2 = clipHorizontally
-					? x +
-						yogaNode.getComputedWidth() -
-						yogaNode.getComputedBorder(Yoga.EDGE_RIGHT)
+					? x + layout.width - layout.borderRight
 					: undefined;
 
-				const y1 = clipVertically
-					? y + yogaNode.getComputedBorder(Yoga.EDGE_TOP)
-					: undefined;
+				const y1 = clipVertically ? y + layout.borderTop : undefined;
 
 				const y2 = clipVertically
-					? y +
-						yogaNode.getComputedHeight() -
-						yogaNode.getComputedBorder(Yoga.EDGE_BOTTOM)
+					? y + layout.height - layout.borderBottom
 					: undefined;
 
 				output.clip({x1, x2, y1, y2});

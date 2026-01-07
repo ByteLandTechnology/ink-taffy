@@ -1,13 +1,15 @@
-import Yoga, {type Node as YogaNode} from 'yoga-layout';
+import {type AvailableSpace} from 'taffy-js';
+import stringWidth from 'string-width';
 import measureText from './measure-text.js';
 import {type Styles} from './styles.js';
 import wrapText from './wrap-text.js';
 import squashTextNodes from './squash-text-nodes.js';
 import {type OutputTransformer} from './render-node-to-output.js';
+import {TaffyNode} from './taffy-node.js';
 
 type InkNode = {
 	parentNode: DOMElement | undefined;
-	yogaNode?: YogaNode;
+	taffyNode?: TaffyNode;
 	internal_static?: boolean;
 	style: Styles;
 };
@@ -93,13 +95,14 @@ export const createNode = (nodeName: ElementNames): DOMElement => {
 		attributes: {},
 		childNodes: [],
 		parentNode: undefined,
-		yogaNode: nodeName === 'ink-virtual-text' ? undefined : Yoga.Node.create(),
+		taffyNode:
+			nodeName === 'ink-virtual-text' ? undefined : new TaffyNode(nodeName),
 		// eslint-disable-next-line @typescript-eslint/naming-convention
 		internal_accessibility: {},
 	};
 
-	if (nodeName === 'ink-text') {
-		node.yogaNode?.setMeasureFunc(measureTextNode.bind(null, node));
+	if (nodeName === 'ink-text' && node.taffyNode) {
+		node.taffyNode.measureFunc = measureTextNode.bind(null, node);
 	}
 
 	return node;
@@ -116,11 +119,8 @@ export const appendChildNode = (
 	childNode.parentNode = node;
 	node.childNodes.push(childNode);
 
-	if (childNode.yogaNode) {
-		node.yogaNode?.insertChild(
-			childNode.yogaNode,
-			node.yogaNode.getChildCount(),
-		);
+	if (childNode.taffyNode) {
+		node.taffyNode?.tree.addChild(node.taffyNode.id, childNode.taffyNode.id);
 	}
 
 	if (node.nodeName === 'ink-text' || node.nodeName === 'ink-virtual-text') {
@@ -142,8 +142,12 @@ export const insertBeforeNode = (
 	const index = node.childNodes.indexOf(beforeChildNode);
 	if (index >= 0) {
 		node.childNodes.splice(index, 0, newChildNode);
-		if (newChildNode.yogaNode) {
-			node.yogaNode?.insertChild(newChildNode.yogaNode, index);
+		if (newChildNode.taffyNode) {
+			node.taffyNode?.tree.insertChildAtIndex(
+				node.taffyNode.id,
+				index,
+				newChildNode.taffyNode.id,
+			);
 		}
 
 		return;
@@ -151,11 +155,8 @@ export const insertBeforeNode = (
 
 	node.childNodes.push(newChildNode);
 
-	if (newChildNode.yogaNode) {
-		node.yogaNode?.insertChild(
-			newChildNode.yogaNode,
-			node.yogaNode.getChildCount(),
-		);
+	if (newChildNode.taffyNode) {
+		node.taffyNode?.tree.addChild(node.taffyNode.id, newChildNode.taffyNode.id);
 	}
 
 	if (node.nodeName === 'ink-text' || node.nodeName === 'ink-virtual-text') {
@@ -167,8 +168,11 @@ export const removeChildNode = (
 	node: DOMElement,
 	removeNode: DOMNode,
 ): void => {
-	if (removeNode.yogaNode) {
-		removeNode.parentNode?.yogaNode?.removeChild(removeNode.yogaNode);
+	if (removeNode.taffyNode) {
+		removeNode.parentNode?.taffyNode?.tree.removeChild(
+			removeNode.parentNode.taffyNode.id,
+			removeNode.taffyNode.id,
+		);
 	}
 
 	removeNode.parentNode = undefined;
@@ -204,7 +208,7 @@ export const createTextNode = (text: string): TextNode => {
 	const node: TextNode = {
 		nodeName: '#text',
 		nodeValue: text,
-		yogaNode: undefined,
+		taffyNode: undefined,
 		parentNode: undefined,
 		style: {},
 	};
@@ -216,20 +220,36 @@ export const createTextNode = (text: string): TextNode => {
 
 const measureTextNode = function (
 	node: DOMNode,
-	width: number,
+	width: AvailableSpace,
 ): {width: number; height: number} {
 	const text =
 		node.nodeName === '#text' ? node.nodeValue : squashTextNodes(node);
 
+	// For minContent mode, compute the minimum possible width for the text.
+	// This is the width of the widest character (e.g., emojis are typically 2 columns, ASCII chars are 1).
+	if (width === 'minContent') {
+		const chars = [...text];
+		const maxCharWidth = Math.max(...chars.map(c => stringWidth(c)), 1);
+		const textWrap = node.style?.textWrap ?? 'wrap';
+		const wrappedText = wrapText(text, maxCharWidth, textWrap);
+		return measureText(wrappedText);
+	}
+
 	const dimensions = measureText(text);
 
+	// For maxContent mode, return the natural text dimensions without wrapping
+	if (width === 'maxContent') {
+		return dimensions;
+	}
+
+	// For definite mode with width constraint:
 	// Text fits into container, no need to wrap
 	if (dimensions.width <= width) {
 		return dimensions;
 	}
 
-	// This is happening when <Box> is shrinking child nodes and Yoga asks
-	// if we can fit this text node in a <1px space, so we just tell Yoga "no"
+	// This is happening when <Box> is shrinking child nodes and layout engine asks
+	// if we can fit this text node in a <1px space, so we just tell it "no"
 	if (dimensions.width >= 1 && width > 0 && width < 1) {
 		return dimensions;
 	}
@@ -240,18 +260,18 @@ const measureTextNode = function (
 	return measureText(wrappedText);
 };
 
-const findClosestYogaNode = (node?: DOMNode): YogaNode | undefined => {
+const findClosestTaffyNode = (node?: DOMNode): TaffyNode | undefined => {
 	if (!node?.parentNode) {
 		return undefined;
 	}
 
-	return node.yogaNode ?? findClosestYogaNode(node.parentNode);
+	return node.taffyNode ?? findClosestTaffyNode(node.parentNode);
 };
 
 const markNodeAsDirty = (node?: DOMNode): void => {
-	// Mark closest Yoga node as dirty to measure text dimensions again
-	const yogaNode = findClosestYogaNode(node);
-	yogaNode?.markDirty();
+	// Mark closest Taffy node as dirty to measure text dimensions again
+	const taffyNode = findClosestTaffyNode(node);
+	taffyNode?.tree.markDirty(taffyNode.id);
 };
 
 export const setTextNodeValue = (node: TextNode, text: string): void => {

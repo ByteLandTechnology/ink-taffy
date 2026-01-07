@@ -15,9 +15,12 @@ type Output = {
 /**
 Measure the dimensions of a particular `<Box>` element.
 */
-const measureElement = (node: DOMElement): Output => ({
-	width: node.yogaNode?.getComputedWidth() ?? 0,
-	height: node.yogaNode?.getComputedHeight() ?? 0,
-});
+const measureElement = (node: DOMElement): Output => {
+	const layout = node.taffyNode?.tree.getLayout(node.taffyNode.id);
+	return {
+		width: layout?.width ?? 0,
+		height: layout?.height ?? 0,
+	};
+};
 
 export default measureElement;

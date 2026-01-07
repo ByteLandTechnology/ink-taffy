@@ -8,7 +8,7 @@ import signalExit from 'signal-exit';
 import patchConsole from 'patch-console';
 import {LegacyRoot} from 'react-reconciler/constants.js';
 import {type FiberRoot} from 'react-reconciler';
-import Yoga from 'yoga-layout';
+import {type AvailableSpace, type Size} from 'taffy-js';
 import wrapAnsi from 'wrap-ansi';
 import reconciler from './reconciler.js';
 import render from './renderer.js';
@@ -17,6 +17,7 @@ import logUpdate, {type LogUpdate} from './log-update.js';
 import instances from './instances.js';
 import App from './components/App.js';
 import {accessibilityContext as AccessibilityContext} from './components/AccessibilityContext.js';
+import {type TaffyNode} from './taffy-node.js';
 
 const noop = () => {};
 
@@ -178,13 +179,33 @@ export default class Ink {
 
 	calculateLayout = () => {
 		const terminalWidth = this.getTerminalWidth();
+		const {tree} = this.rootNode.taffyNode!;
 
-		this.rootNode.yogaNode!.setWidth(terminalWidth);
+		const rootStyle = tree.getStyle(this.rootNode.taffyNode!.id);
+		rootStyle.size = {
+			width: terminalWidth,
+			height: 'auto',
+		};
+		tree.setStyle(this.rootNode.taffyNode!.id, rootStyle);
 
-		this.rootNode.yogaNode!.calculateLayout(
-			undefined,
-			undefined,
-			Yoga.DIRECTION_LTR,
+		tree.computeLayoutWithMeasure(
+			this.rootNode.taffyNode!.id,
+			{
+				width: terminalWidth,
+				height: 'maxContent',
+			},
+			(
+				_knownDimensions: Size<number | undefined>,
+				availableSpace: Size<AvailableSpace>,
+				_node: bigint,
+				context: TaffyNode,
+			) => {
+				if (!context?.measureFunc) {
+					return {width: 0, height: 0};
+				}
+
+				return context.measureFunc(availableSpace.width);
+			},
 		);
 	};
 

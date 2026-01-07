@@ -2,7 +2,20 @@
 import {type Boxes, type BoxStyle} from 'cli-boxes';
 import {type LiteralUnion} from 'type-fest';
 import {type ForegroundColorName} from 'ansi-styles'; // Note: We import directly from `ansi-styles` to avoid a bug in TypeScript.
-import Yoga, {type Node as YogaNode} from 'yoga-layout';
+import {
+	Display,
+	FlexDirection,
+	FlexWrap,
+	AlignItems,
+	AlignSelf,
+	JustifyContent,
+	Position,
+	type LengthPercentage,
+	type Style as TaffyStyle,
+	type Dimension,
+	AlignContent,
+} from 'taffy-js';
+import {type TaffyNode} from './taffy-node.js';
 
 export type Styles = {
 	readonly textWrap?:
@@ -302,284 +315,428 @@ export type Styles = {
 	readonly backgroundColor?: LiteralUnion<ForegroundColorName, string>;
 };
 
-const applyPositionStyles = (node: YogaNode, style: Styles): void => {
+const applyPositionStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 	if ('position' in style) {
-		node.setPositionType(
-			style.position === 'absolute'
-				? Yoga.POSITION_TYPE_ABSOLUTE
-				: Yoga.POSITION_TYPE_RELATIVE,
-		);
+		taffyStyle.position =
+			style.position === 'absolute' ? Position.Absolute : Position.Relative;
 	}
 };
 
-const applyMarginStyles = (node: YogaNode, style: Styles): void => {
+const applyMarginStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
+	let marginLeft: number | undefined;
+	let marginRight: number | undefined;
+	let marginTop: number | undefined;
+	let marginBottom: number | undefined;
+
 	if ('margin' in style) {
-		node.setMargin(Yoga.EDGE_ALL, style.margin ?? 0);
+		marginLeft = style.margin ?? 0;
+		marginRight = marginLeft;
+		marginTop = marginLeft;
+		marginBottom = marginLeft;
 	}
 
 	if ('marginX' in style) {
-		node.setMargin(Yoga.EDGE_HORIZONTAL, style.marginX ?? 0);
+		marginLeft = style.marginX ?? 0;
+		marginRight = marginLeft;
 	}
 
 	if ('marginY' in style) {
-		node.setMargin(Yoga.EDGE_VERTICAL, style.marginY ?? 0);
+		marginTop = style.marginY ?? 0;
+		marginBottom = marginTop;
 	}
 
 	if ('marginLeft' in style) {
-		node.setMargin(Yoga.EDGE_START, style.marginLeft || 0);
+		marginLeft = style.marginLeft || 0;
 	}
 
 	if ('marginRight' in style) {
-		node.setMargin(Yoga.EDGE_END, style.marginRight || 0);
+		marginRight = style.marginRight || 0;
 	}
 
 	if ('marginTop' in style) {
-		node.setMargin(Yoga.EDGE_TOP, style.marginTop || 0);
+		marginTop = style.marginTop || 0;
 	}
 
 	if ('marginBottom' in style) {
-		node.setMargin(Yoga.EDGE_BOTTOM, style.marginBottom || 0);
+		marginBottom = style.marginBottom || 0;
+	}
+
+	if (marginLeft || marginRight || marginTop || marginBottom) {
+		taffyStyle.margin = {
+			left: marginLeft ?? taffyStyle.margin.left,
+			right: marginRight ?? taffyStyle.margin.right,
+			top: marginTop ?? taffyStyle.margin.top,
+			bottom: marginBottom ?? taffyStyle.margin.bottom,
+		};
 	}
 };
 
-const applyPaddingStyles = (node: YogaNode, style: Styles): void => {
+const applyPaddingStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
+	let paddingLeft: number | undefined;
+	let paddingRight: number | undefined;
+	let paddingTop: number | undefined;
+	let paddingBottom: number | undefined;
+
 	if ('padding' in style) {
-		node.setPadding(Yoga.EDGE_ALL, style.padding ?? 0);
+		paddingLeft = style.padding ?? 0;
+		paddingRight = paddingLeft;
+		paddingTop = paddingLeft;
+		paddingBottom = paddingLeft;
 	}
 
 	if ('paddingX' in style) {
-		node.setPadding(Yoga.EDGE_HORIZONTAL, style.paddingX ?? 0);
+		paddingLeft = style.paddingX ?? 0;
+		paddingRight = paddingLeft;
 	}
 
 	if ('paddingY' in style) {
-		node.setPadding(Yoga.EDGE_VERTICAL, style.paddingY ?? 0);
+		paddingTop = style.paddingY ?? 0;
+		paddingBottom = paddingTop;
 	}
 
 	if ('paddingLeft' in style) {
-		node.setPadding(Yoga.EDGE_LEFT, style.paddingLeft || 0);
+		paddingLeft = style.paddingLeft || 0;
 	}
 
 	if ('paddingRight' in style) {
-		node.setPadding(Yoga.EDGE_RIGHT, style.paddingRight || 0);
+		paddingRight = style.paddingRight || 0;
 	}
 
 	if ('paddingTop' in style) {
-		node.setPadding(Yoga.EDGE_TOP, style.paddingTop || 0);
+		paddingTop = style.paddingTop || 0;
 	}
 
 	if ('paddingBottom' in style) {
-		node.setPadding(Yoga.EDGE_BOTTOM, style.paddingBottom || 0);
+		paddingBottom = style.paddingBottom || 0;
+	}
+
+	if (paddingLeft || paddingRight || paddingTop || paddingBottom) {
+		taffyStyle.padding = {
+			left: paddingLeft ?? taffyStyle.padding.left,
+			right: paddingRight ?? taffyStyle.padding.right,
+			top: paddingTop ?? taffyStyle.padding.top,
+			bottom: paddingBottom ?? taffyStyle.padding.bottom,
+		};
 	}
 };
 
-const applyFlexStyles = (node: YogaNode, style: Styles): void => {
+const applyFlexStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 	if ('flexGrow' in style) {
-		node.setFlexGrow(style.flexGrow ?? 0);
+		taffyStyle.flexGrow = style.flexGrow ?? 0;
 	}
 
 	if ('flexShrink' in style) {
-		node.setFlexShrink(
-			typeof style.flexShrink === 'number' ? style.flexShrink : 1,
-		);
+		taffyStyle.flexShrink =
+			typeof style.flexShrink === 'number' ? style.flexShrink : 1;
 	}
 
 	if ('flexWrap' in style) {
-		if (style.flexWrap === 'nowrap') {
-			node.setFlexWrap(Yoga.WRAP_NO_WRAP);
-		}
+		switch (style.flexWrap) {
+			case 'nowrap': {
+				taffyStyle.flexWrap = FlexWrap.NoWrap;
+				break;
+			}
 
-		if (style.flexWrap === 'wrap') {
-			node.setFlexWrap(Yoga.WRAP_WRAP);
-		}
+			case 'wrap': {
+				taffyStyle.flexWrap = FlexWrap.Wrap;
+				break;
+			}
 
-		if (style.flexWrap === 'wrap-reverse') {
-			node.setFlexWrap(Yoga.WRAP_WRAP_REVERSE);
+			case 'wrap-reverse': {
+				taffyStyle.flexWrap = FlexWrap.WrapReverse;
+				break;
+			}
+
+			default: {
+				taffyStyle.flexWrap = FlexWrap.NoWrap;
+				break;
+			}
 		}
 	}
 
 	if ('flexDirection' in style) {
-		if (style.flexDirection === 'row') {
-			node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
-		}
+		switch (style.flexDirection) {
+			case 'row': {
+				taffyStyle.flexDirection = FlexDirection.Row;
+				break;
+			}
 
-		if (style.flexDirection === 'row-reverse') {
-			node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW_REVERSE);
-		}
+			case 'row-reverse': {
+				taffyStyle.flexDirection = FlexDirection.RowReverse;
+				break;
+			}
 
-		if (style.flexDirection === 'column') {
-			node.setFlexDirection(Yoga.FLEX_DIRECTION_COLUMN);
-		}
+			case 'column': {
+				taffyStyle.flexDirection = FlexDirection.Column;
+				break;
+			}
 
-		if (style.flexDirection === 'column-reverse') {
-			node.setFlexDirection(Yoga.FLEX_DIRECTION_COLUMN_REVERSE);
+			case 'column-reverse': {
+				taffyStyle.flexDirection = FlexDirection.ColumnReverse;
+				break;
+			}
+
+			default: {
+				taffyStyle.flexDirection = FlexDirection.Row;
+				break;
+			}
 		}
 	}
 
 	if ('flexBasis' in style) {
 		if (typeof style.flexBasis === 'number') {
-			node.setFlexBasis(style.flexBasis);
-		} else if (typeof style.flexBasis === 'string') {
-			node.setFlexBasisPercent(Number.parseInt(style.flexBasis, 10));
+			taffyStyle.flexBasis = style.flexBasis;
+		} else if (
+			typeof style.flexBasis === 'string' &&
+			style.flexBasis.endsWith('%')
+		) {
+			taffyStyle.flexBasis = style.flexBasis as `${number}%`;
 		} else {
-			// This should be replaced with node.setFlexBasisAuto() when new Yoga release is out
-			node.setFlexBasis(Number.NaN);
+			taffyStyle.flexBasis = 'auto';
 		}
 	}
 
 	if ('alignItems' in style) {
-		if (style.alignItems === 'stretch' || !style.alignItems) {
-			node.setAlignItems(Yoga.ALIGN_STRETCH);
-		}
+		switch (style.alignItems) {
+			case 'stretch': {
+				taffyStyle.alignItems = AlignItems.Stretch;
+				break;
+			}
 
-		if (style.alignItems === 'flex-start') {
-			node.setAlignItems(Yoga.ALIGN_FLEX_START);
-		}
+			case 'flex-start': {
+				taffyStyle.alignItems = AlignItems.FlexStart;
+				break;
+			}
 
-		if (style.alignItems === 'center') {
-			node.setAlignItems(Yoga.ALIGN_CENTER);
-		}
+			case 'center': {
+				taffyStyle.alignItems = AlignItems.Center;
+				break;
+			}
 
-		if (style.alignItems === 'flex-end') {
-			node.setAlignItems(Yoga.ALIGN_FLEX_END);
+			case 'flex-end': {
+				taffyStyle.alignItems = AlignItems.FlexEnd;
+				break;
+			}
+
+			default: {
+				taffyStyle.alignItems = undefined;
+				break;
+			}
 		}
 	}
 
 	if ('alignSelf' in style) {
-		if (style.alignSelf === 'auto' || !style.alignSelf) {
-			node.setAlignSelf(Yoga.ALIGN_AUTO);
-		}
+		switch (style.alignSelf) {
+			case 'flex-start': {
+				taffyStyle.alignSelf = AlignSelf.FlexStart;
+				break;
+			}
 
-		if (style.alignSelf === 'flex-start') {
-			node.setAlignSelf(Yoga.ALIGN_FLEX_START);
-		}
+			case 'center': {
+				taffyStyle.alignSelf = AlignSelf.Center;
+				break;
+			}
 
-		if (style.alignSelf === 'center') {
-			node.setAlignSelf(Yoga.ALIGN_CENTER);
-		}
+			case 'flex-end': {
+				taffyStyle.alignSelf = AlignSelf.FlexEnd;
+				break;
+			}
 
-		if (style.alignSelf === 'flex-end') {
-			node.setAlignSelf(Yoga.ALIGN_FLEX_END);
+			case 'auto': {
+				taffyStyle.alignSelf = AlignSelf.Auto;
+				break;
+			}
+
+			default: {
+				taffyStyle.alignSelf = undefined;
+				break;
+			}
 		}
 	}
 
 	if ('justifyContent' in style) {
-		if (style.justifyContent === 'flex-start' || !style.justifyContent) {
-			node.setJustifyContent(Yoga.JUSTIFY_FLEX_START);
-		}
+		switch (style.justifyContent) {
+			case 'flex-start': {
+				taffyStyle.justifyContent = JustifyContent.FlexStart;
+				break;
+			}
 
-		if (style.justifyContent === 'center') {
-			node.setJustifyContent(Yoga.JUSTIFY_CENTER);
-		}
+			case 'center': {
+				taffyStyle.justifyContent = JustifyContent.Center;
+				break;
+			}
 
-		if (style.justifyContent === 'flex-end') {
-			node.setJustifyContent(Yoga.JUSTIFY_FLEX_END);
-		}
+			case 'flex-end': {
+				taffyStyle.justifyContent = JustifyContent.FlexEnd;
+				break;
+			}
 
-		if (style.justifyContent === 'space-between') {
-			node.setJustifyContent(Yoga.JUSTIFY_SPACE_BETWEEN);
-		}
+			case 'space-between': {
+				taffyStyle.justifyContent = JustifyContent.SpaceBetween;
+				break;
+			}
 
-		if (style.justifyContent === 'space-around') {
-			node.setJustifyContent(Yoga.JUSTIFY_SPACE_AROUND);
-		}
+			case 'space-around': {
+				taffyStyle.justifyContent = JustifyContent.SpaceAround;
+				break;
+			}
 
-		if (style.justifyContent === 'space-evenly') {
-			node.setJustifyContent(Yoga.JUSTIFY_SPACE_EVENLY);
+			case 'space-evenly': {
+				taffyStyle.justifyContent = JustifyContent.SpaceEvenly;
+				break;
+			}
+
+			default: {
+				taffyStyle.justifyContent = undefined;
+				break;
+			}
 		}
+	}
+
+	if (taffyStyle.alignContent === undefined) {
+		taffyStyle.alignContent = AlignContent.FlexStart;
 	}
 };
 
-const applyDimensionStyles = (node: YogaNode, style: Styles): void => {
+const applyDimensionStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
+	let newWidth: Dimension | undefined;
+
 	if ('width' in style) {
 		if (typeof style.width === 'number') {
-			node.setWidth(style.width);
-		} else if (typeof style.width === 'string') {
-			node.setWidthPercent(Number.parseInt(style.width, 10));
+			newWidth = style.width;
+		} else if (typeof style.width === 'string' && style.width.endsWith('%')) {
+			newWidth = style.width as `${number}%`;
 		} else {
-			node.setWidthAuto();
+			newWidth = 'auto';
 		}
 	}
 
+	let newHeight: Dimension | undefined;
 	if ('height' in style) {
 		if (typeof style.height === 'number') {
-			node.setHeight(style.height);
-		} else if (typeof style.height === 'string') {
-			node.setHeightPercent(Number.parseInt(style.height, 10));
+			newHeight = style.height;
+		} else if (typeof style.height === 'string' && style.height.endsWith('%')) {
+			newHeight = style.height as `${number}%`;
 		} else {
-			node.setHeightAuto();
+			newHeight = 'auto';
 		}
 	}
 
+	if (newWidth || newHeight) {
+		taffyStyle.size = {
+			width: newWidth ?? taffyStyle.size.width,
+			height: newHeight ?? taffyStyle.size.height,
+		};
+	}
+
+	let newMinWidth: Dimension | undefined;
 	if ('minWidth' in style) {
-		if (typeof style.minWidth === 'string') {
-			node.setMinWidthPercent(Number.parseInt(style.minWidth, 10));
+		if (typeof style.minWidth === 'number') {
+			newMinWidth = style.minWidth;
+		} else if (
+			typeof style.minWidth === 'string' &&
+			style.minWidth.endsWith('%')
+		) {
+			newMinWidth = style.minWidth as `${number}%`;
 		} else {
-			node.setMinWidth(style.minWidth ?? 0);
+			newMinWidth = 'auto';
 		}
 	}
 
+	let newMinHeight: Dimension | undefined;
 	if ('minHeight' in style) {
-		if (typeof style.minHeight === 'string') {
-			node.setMinHeightPercent(Number.parseInt(style.minHeight, 10));
+		if (typeof style.minHeight === 'number') {
+			newMinHeight = style.minHeight;
+		} else if (
+			typeof style.minHeight === 'string' &&
+			style.minHeight.endsWith('%')
+		) {
+			newMinHeight = style.minHeight as `${number}%`;
 		} else {
-			node.setMinHeight(style.minHeight ?? 0);
+			newMinHeight = 'auto';
 		}
 	}
-};
 
-const applyDisplayStyles = (node: YogaNode, style: Styles): void => {
-	if ('display' in style) {
-		node.setDisplay(
-			style.display === 'flex' ? Yoga.DISPLAY_FLEX : Yoga.DISPLAY_NONE,
-		);
+	if (newMinWidth || newMinHeight) {
+		taffyStyle.minSize = {
+			width: newMinWidth ?? taffyStyle.minSize.width,
+			height: newMinHeight ?? taffyStyle.minSize.height,
+		};
 	}
 };
 
-const applyBorderStyles = (node: YogaNode, style: Styles): void => {
+const applyDisplayStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
+	if ('display' in style) {
+		taffyStyle.display = style.display === 'none' ? Display.None : Display.Flex;
+	}
+};
+
+const applyBorderStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 	if ('borderStyle' in style) {
 		const borderWidth = style.borderStyle ? 1 : 0;
+		const border = {
+			left: 0,
+			right: 0,
+			top: 0,
+			bottom: 0,
+		};
 
 		if (style.borderTop !== false) {
-			node.setBorder(Yoga.EDGE_TOP, borderWidth);
+			border.top = borderWidth;
 		}
 
 		if (style.borderBottom !== false) {
-			node.setBorder(Yoga.EDGE_BOTTOM, borderWidth);
+			border.bottom = borderWidth;
 		}
 
 		if (style.borderLeft !== false) {
-			node.setBorder(Yoga.EDGE_LEFT, borderWidth);
+			border.left = borderWidth;
 		}
 
 		if (style.borderRight !== false) {
-			node.setBorder(Yoga.EDGE_RIGHT, borderWidth);
+			border.right = borderWidth;
 		}
+
+		taffyStyle.border = border;
 	}
 };
 
-const applyGapStyles = (node: YogaNode, style: Styles): void => {
+const applyGapStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
+	let gapWidth: LengthPercentage | undefined;
+	let gapHeight: LengthPercentage | undefined;
 	if ('gap' in style) {
-		node.setGap(Yoga.GUTTER_ALL, style.gap ?? 0);
+		const val = style.gap ?? 0;
+		gapWidth = val;
+		gapHeight = val;
 	}
 
 	if ('columnGap' in style) {
-		node.setGap(Yoga.GUTTER_COLUMN, style.columnGap ?? 0);
+		gapWidth = style.columnGap ?? 0;
 	}
 
 	if ('rowGap' in style) {
-		node.setGap(Yoga.GUTTER_ROW, style.rowGap ?? 0);
+		gapHeight = style.rowGap ?? 0;
+	}
+
+	if (gapWidth !== undefined || gapHeight !== undefined) {
+		taffyStyle.gap = {
+			width: gapWidth ?? taffyStyle.gap.width,
+			height: gapHeight ?? taffyStyle.gap.height,
+		};
 	}
 };
 
-const styles = (node: YogaNode, style: Styles = {}): void => {
-	applyPositionStyles(node, style);
-	applyMarginStyles(node, style);
-	applyPaddingStyles(node, style);
-	applyFlexStyles(node, style);
-	applyDimensionStyles(node, style);
-	applyDisplayStyles(node, style);
-	applyBorderStyles(node, style);
-	applyGapStyles(node, style);
+const styles = (node: TaffyNode, style: Styles = {}): void => {
+	const taffyStyle = node.tree.getStyle(node.id);
+	applyPositionStyles(taffyStyle, style);
+	applyMarginStyles(taffyStyle, style);
+	applyPaddingStyles(taffyStyle, style);
+	applyFlexStyles(taffyStyle, style);
+	applyDimensionStyles(taffyStyle, style);
+	applyDisplayStyles(taffyStyle, style);
+	applyBorderStyles(taffyStyle, style);
+	applyGapStyles(taffyStyle, style);
+	node.tree.setStyle(node.id, taffyStyle);
 };
 
 export default styles;

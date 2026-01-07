@@ -1,13 +1,13 @@
 {
-	"name": "ink",
+	"name": "ink-taffy",
 	"version": "6.6.0",
 	"description": "React for CLI",
 	"license": "MIT",
-	"repository": "vadimdemedes/ink",
+	"repository": "ByteLandTechnology/ink-taffy",
 	"author": {
-		"name": "Vadim Demedes",
-		"email": "vadimdemedes@hey.com",
-		"url": "https://github.com/vadimdemedes"
+		"name": "ByteLandTechnology",
+		"email": "github@byteland.app",
+		"url": "https://github.com/ByteLandTechnology"
 	},
 	"type": "module",
 	"exports": {
@@ -65,7 +65,7 @@
 		"widest-line": "^5.0.0",
 		"wrap-ansi": "^9.0.0",
 		"ws": "^8.18.0",
-		"yoga-layout": "~3.2.1"
+		"taffy-js": "^0.2.9"
 	},
 	"devDependencies": {
 		"@faker-js/faker": "^9.8.0",
