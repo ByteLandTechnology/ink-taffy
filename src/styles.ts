@@ -15,6 +15,12 @@ import {
 	type Dimension,
 	AlignContent,
 	Overflow,
+	GridAutoFlow,
+	type GridPlacement,
+	type Line,
+	type GridTemplateComponent,
+	type TrackSizingFunction,
+	type GridTemplateArea,
 } from 'taffy-layout';
 import {type TaffyNode} from './taffy-node.js';
 
@@ -149,13 +155,25 @@ export type Styles = {
 	The align-items property defines the default behavior for how items are laid out along the cross axis (perpendicular to the main axis).
 	See [align-items](https://css-tricks.com/almanac/properties/a/align-items/).
 	*/
-	readonly alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+	readonly alignItems?:
+		| 'flex-start'
+		| 'center'
+		| 'flex-end'
+		| 'stretch'
+		| 'start'
+		| 'end';
 
 	/**
 	It makes possible to override the align-items value for specific flex items.
 	See [align-self](https://css-tricks.com/almanac/properties/a/align-self/).
 	*/
-	readonly alignSelf?: 'flex-start' | 'center' | 'flex-end' | 'auto';
+	readonly alignSelf?:
+		| 'flex-start'
+		| 'center'
+		| 'flex-end'
+		| 'auto'
+		| 'start'
+		| 'end';
 
 	/**
 	It defines the alignment along the main axis.
@@ -167,7 +185,47 @@ export type Styles = {
 		| 'space-between'
 		| 'space-around'
 		| 'space-evenly'
-		| 'center';
+		| 'center'
+		| 'start'
+		| 'end';
+
+	/**
+	The align-content property modifies the behavior of the flex-wrap property. It is similar to align-items, but it aligns flex lines.
+	See [align-content](https://css-tricks.com/almanac/properties/a/align-content/).
+	*/
+	readonly alignContent?:
+		| 'flex-start'
+		| 'flex-end'
+		| 'space-between'
+		| 'space-around'
+		| 'stretch'
+		| 'center'
+		| 'space-evenly'
+		| 'start'
+		| 'end';
+
+	/**
+	The justify-items property defines the default justify-self for all items of the box, giving them all a default way of justifying each box along the appropriate axis.
+	See [justify-items](https://css-tricks.com/almanac/properties/j/justify-items/).
+	*/
+	readonly justifyItems?:
+		| 'flex-start'
+		| 'end'
+		| 'flex-end'
+		| 'center'
+		| 'stretch';
+
+	/**
+	The justify-self property sets the way a box is justified inside its alignment container along the appropriate axis.
+	See [justify-self](https://css-tricks.com/almanac/properties/j/justify-self/).
+	*/
+	readonly justifySelf?:
+		| 'auto'
+		| 'flex-start'
+		| 'end'
+		| 'flex-end'
+		| 'center'
+		| 'stretch';
 
 	/**
 	Width of the element in spaces. You can also set it as a percentage, which will calculate the width based on the width of the parent element.
@@ -192,7 +250,7 @@ export type Styles = {
 	/**
 	Set this property to `none` to hide the element.
 	*/
-	readonly display?: 'flex' | 'none';
+	readonly display?: 'flex' | 'grid' | 'none';
 
 	/**
 	Add a border with a specified style. If `borderStyle` is `undefined` (the default), no border will be added.
@@ -314,6 +372,68 @@ export type Styles = {
 	Accepts the same values as `color` in the `<Text>` component.
 	*/
 	readonly backgroundColor?: LiteralUnion<ForegroundColorName, string>;
+
+	/**
+	 * CSS Grid Layout properties
+	 */
+
+	/**
+	 * Defines the columns of the grid with a space-separated list of values.
+	 * The values represent the track size, and the space between them represents the grid line.
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns
+	 */
+	readonly gridTemplateColumns?: Array<GridTemplateComponent | number>;
+
+	/**
+	 * Defines the rows of the grid with a space-separated list of values.
+	 * The values represent the track size, and the space between them represents the grid line.
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-rows
+	 */
+	readonly gridTemplateRows?: Array<GridTemplateComponent | number>;
+
+	/**
+	 * Specifies the size of an implicitly-created grid column track.
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-columns
+	 */
+	readonly gridAutoColumns?: Array<TrackSizingFunction | number>;
+
+	/**
+	 * Specifies the size of an implicitly-created grid row track.
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-rows
+	 */
+	readonly gridAutoRows?: Array<TrackSizingFunction | number>;
+
+	/**
+	 * Controls how the auto-placement algorithm works, specifying exactly how auto-placed items get flowed into the grid.
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-flow
+	 */
+	readonly gridAutoFlow?: 'row' | 'column' | 'row-dense' | 'column-dense';
+
+	/**
+	 * Specifies a grid item’s size and location within a grid row.
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row
+	 */
+	readonly gridRow?: Line<GridPlacement>;
+
+	/**
+	 * Specifies a grid item’s size and location within a grid column.
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column
+	 */
+	readonly gridColumn?: Line<GridPlacement>;
+
+	/**
+	 * Specifies named grid areas.
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-areas
+	 */
+	readonly gridTemplateAreas?: GridTemplateArea[];
 };
 
 const applyPositionStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
@@ -529,6 +649,16 @@ const applyFlexStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 				break;
 			}
 
+			case 'start': {
+				taffyStyle.alignItems = AlignItems.Start;
+				break;
+			}
+
+			case 'end': {
+				taffyStyle.alignItems = AlignItems.End;
+				break;
+			}
+
 			default: {
 				taffyStyle.alignItems = undefined;
 				break;
@@ -555,6 +685,16 @@ const applyFlexStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 
 			case 'auto': {
 				taffyStyle.alignSelf = AlignSelf.Auto;
+				break;
+			}
+
+			case 'start': {
+				taffyStyle.alignSelf = AlignSelf.Start;
+				break;
+			}
+
+			case 'end': {
+				taffyStyle.alignSelf = AlignSelf.End;
 				break;
 			}
 
@@ -597,8 +737,72 @@ const applyFlexStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 				break;
 			}
 
+			case 'start': {
+				taffyStyle.justifyContent = JustifyContent.Start;
+				break;
+			}
+
+			case 'end': {
+				taffyStyle.justifyContent = JustifyContent.End;
+				break;
+			}
+
 			default: {
 				taffyStyle.justifyContent = undefined;
+				break;
+			}
+		}
+	}
+
+	if ('alignContent' in style) {
+		switch (style.alignContent) {
+			case 'flex-start': {
+				taffyStyle.alignContent = AlignContent.FlexStart;
+				break;
+			}
+
+			case 'flex-end': {
+				taffyStyle.alignContent = AlignContent.FlexEnd;
+				break;
+			}
+
+			case 'space-between': {
+				taffyStyle.alignContent = AlignContent.SpaceBetween;
+				break;
+			}
+
+			case 'space-around': {
+				taffyStyle.alignContent = AlignContent.SpaceAround;
+				break;
+			}
+
+			case 'stretch': {
+				taffyStyle.alignContent = AlignContent.Stretch;
+				break;
+			}
+
+			case 'center': {
+				taffyStyle.alignContent = AlignContent.Center;
+				break;
+			}
+
+			case 'space-evenly': {
+				taffyStyle.alignContent = AlignContent.SpaceEvenly;
+				break;
+			}
+
+			case 'start': {
+				taffyStyle.alignContent = AlignContent.Start;
+				break;
+			}
+
+			case 'end': {
+				taffyStyle.alignContent = AlignContent.End;
+				break;
+			}
+
+			default: {
+				taffyStyle.alignContent = undefined;
 				break;
 			}
 		}
@@ -678,7 +882,27 @@ const applyDimensionStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 
 const applyDisplayStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 	if ('display' in style) {
-		taffyStyle.display = style.display === 'none' ? Display.None : Display.Flex;
+		switch (style.display) {
+			case 'flex': {
+				taffyStyle.display = Display.Flex;
+				break;
+			}
+
+			case 'grid': {
+				taffyStyle.display = Display.Grid;
+				break;
+			}
+
+			case 'none': {
+				taffyStyle.display = Display.None;
+				break;
+			}
+
+			default: {
+				taffyStyle.display = Display.Flex;
+				break;
+			}
+		}
 	}
 };
 
@@ -809,6 +1033,166 @@ const applyOverflowStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
 	}
 };
 
+const mapGridTrack = (
+	track: GridTemplateComponent | number,
+): GridTemplateComponent => {
+	if (typeof track === 'number') {
+		return {min: track, max: track};
+	}
+
+	return track;
+};
+
+const mapTrackSizing = (
+	track: TrackSizingFunction | number,
+): TrackSizingFunction => {
+	if (typeof track === 'number') {
+		return {min: track, max: track};
+	}
+
+	return track;
+};
+
+const applyGridStyles = (taffyStyle: TaffyStyle, style: Styles): void => {
+	if ('gridTemplateColumns' in style && style.gridTemplateColumns) {
+		taffyStyle.gridTemplateColumns = style.gridTemplateColumns.map(track =>
+			mapGridTrack(track),
+		);
+	}
+
+	if ('gridTemplateRows' in style && style.gridTemplateRows) {
+		taffyStyle.gridTemplateRows = style.gridTemplateRows.map(track =>
+			mapGridTrack(track),
+		);
+	}
+
+	if ('gridAutoColumns' in style && style.gridAutoColumns) {
+		taffyStyle.gridAutoColumns = style.gridAutoColumns.map(track =>
+			mapTrackSizing(track),
+		);
+	}
+
+	if ('gridAutoRows' in style && style.gridAutoRows) {
+		taffyStyle.gridAutoRows = style.gridAutoRows.map(track =>
+			mapTrackSizing(track),
+		);
+	}
+
+	if ('gridAutoFlow' in style) {
+		switch (style.gridAutoFlow) {
+			case 'row': {
+				taffyStyle.gridAutoFlow = GridAutoFlow.Row;
+				break;
+			}
+
+			case 'column': {
+				taffyStyle.gridAutoFlow = GridAutoFlow.Column;
+				break;
+			}
+
+			case 'row-dense': {
+				taffyStyle.gridAutoFlow = GridAutoFlow.RowDense;
+				break;
+			}
+
+			case 'column-dense': {
+				taffyStyle.gridAutoFlow = GridAutoFlow.ColumnDense;
+				break;
+			}
+
+			default: {
+				taffyStyle.gridAutoFlow = GridAutoFlow.Row;
+				break;
+			}
+		}
+	}
+
+	if ('gridRow' in style && style.gridRow) {
+		taffyStyle.gridRow = style.gridRow;
+	}
+
+	if ('gridColumn' in style && style.gridColumn) {
+		taffyStyle.gridColumn = style.gridColumn;
+	}
+
+	if ('gridTemplateAreas' in style && style.gridTemplateAreas) {
+		taffyStyle.gridTemplateAreas = style.gridTemplateAreas;
+	}
+
+	if ('justifyItems' in style) {
+		switch (style.justifyItems) {
+			case 'flex-start': {
+				taffyStyle.justifyItems = AlignItems.FlexStart;
+				break;
+			}
+
+			case 'flex-end': {
+				taffyStyle.justifyItems = AlignItems.FlexEnd;
+				break;
+			}
+
+			case 'center': {
+				taffyStyle.justifyItems = AlignItems.Center;
+				break;
+			}
+
+			case 'stretch': {
+				taffyStyle.justifyItems = AlignItems.Stretch;
+				break;
+			}
+
+			case 'end': {
+				taffyStyle.justifyItems = AlignItems.End;
+				break;
+			}
+
+			default: {
+				taffyStyle.justifyItems = undefined;
+				break;
+			}
+		}
+	}
+
+	if ('justifySelf' in style) {
+		switch (style.justifySelf) {
+			case 'flex-start': {
+				taffyStyle.justifySelf = AlignSelf.FlexStart;
+				break;
+			}
+
+			case 'flex-end': {
+				taffyStyle.justifySelf = AlignSelf.FlexEnd;
+				break;
+			}
+
+			case 'center': {
+				taffyStyle.justifySelf = AlignSelf.Center;
+				break;
+			}
+
+			case 'stretch': {
+				taffyStyle.justifySelf = AlignSelf.Stretch;
+				break;
+			}
+
+			case 'end': {
+				taffyStyle.justifySelf = AlignSelf.End;
+				break;
+			}
+
+			case 'auto': {
+				taffyStyle.justifySelf = AlignSelf.Auto;
+				break;
+			}
+
+			default: {
+				taffyStyle.justifySelf = undefined;
+				break;
+			}
+		}
+	}
+};
+
 const styles = (node: TaffyNode, style: Styles = {}): void => {
 	const taffyStyle = node.tree.getStyle(node.id);
 	applyPositionStyles(taffyStyle, style);
@@ -820,6 +1204,7 @@ const styles = (node: TaffyNode, style: Styles = {}): void => {
 	applyBorderStyles(taffyStyle, style);
 	applyGapStyles(taffyStyle, style);
 	applyOverflowStyles(taffyStyle, style);
+	applyGridStyles(taffyStyle, style);
 	node.tree.setStyle(node.id, taffyStyle);
 };
 
