@@ -15,7 +15,7 @@ import {
 	type Dimension,
 	AlignContent,
 	Overflow,
-} from 'taffy-js';
+} from 'taffy-layout';
 import {type TaffyNode} from './taffy-node.js';
 
 export type Styles = {

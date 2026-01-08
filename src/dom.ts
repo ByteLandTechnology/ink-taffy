@@ -1,4 +1,4 @@
-import {type AvailableSpace} from 'taffy-js';
+import {type AvailableSpace} from 'taffy-layout';
 import stringWidth from 'string-width';
 import measureText from './measure-text.js';
 import {type Styles} from './styles.js';
@@ -227,7 +227,7 @@ const measureTextNode = function (
 
 	// For minContent mode, compute the minimum possible width for the text.
 	// This is the width of the widest character (e.g., emojis are typically 2 columns, ASCII chars are 1).
-	if (width === 'minContent') {
+	if (width === 'min-content') {
 		const chars = [...text];
 		const maxCharWidth = Math.max(...chars.map(c => stringWidth(c)), 1);
 		const textWrap = node.style?.textWrap ?? 'wrap';
@@ -238,7 +238,7 @@ const measureTextNode = function (
 	const dimensions = measureText(text);
 
 	// For maxContent mode, return the natural text dimensions without wrapping
-	if (width === 'maxContent') {
+	if (width === 'max-content') {
 		return dimensions;
 	}
 

@@ -6,7 +6,7 @@ import {
 	FlexDirection,
 	Style,
 	TaffyTree,
-} from 'taffy-js';
+} from 'taffy-layout';
 import {type ElementNames} from './dom.js';
 
 // Initialize Taffy and create a global tree instance

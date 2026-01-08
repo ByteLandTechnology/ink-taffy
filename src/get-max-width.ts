@@ -1,4 +1,4 @@
-import {type Layout} from 'taffy-js';
+import {type Layout} from 'taffy-layout';
 
 const getMaxWidth = (layout: Layout) => {
 	return (

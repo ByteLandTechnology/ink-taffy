@@ -4,7 +4,7 @@ import {
 	DefaultEventPriority,
 	NoEventPriority,
 } from 'react-reconciler/constants.js';
-import {Display} from 'taffy-js';
+import {Display} from 'taffy-layout';
 import {createContext} from 'react';
 import {
 	createTextNode,

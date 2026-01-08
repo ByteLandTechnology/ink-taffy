@@ -8,7 +8,7 @@ import signalExit from 'signal-exit';
 import patchConsole from 'patch-console';
 import {LegacyRoot} from 'react-reconciler/constants.js';
 import {type FiberRoot} from 'react-reconciler';
-import {type AvailableSpace, type Size} from 'taffy-js';
+import {type AvailableSpace, type Size} from 'taffy-layout';
 import wrapAnsi from 'wrap-ansi';
 import reconciler from './reconciler.js';
 import render from './renderer.js';
@@ -192,7 +192,7 @@ export default class Ink {
 			this.rootNode.taffyNode!.id,
 			{
 				width: terminalWidth,
-				height: 'maxContent',
+				height: 'max-content',
 			},
 			(
 				_knownDimensions: Size<number | undefined>,
